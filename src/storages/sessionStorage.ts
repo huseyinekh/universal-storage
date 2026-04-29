@@ -1,0 +1,1 @@
+export { createWebStorage } from "./localStorage";
