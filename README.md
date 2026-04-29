@@ -9,6 +9,8 @@ Unified, type-safe API for browser storage:
 
 Works in JavaScript and TypeScript. SSR-safe: in non-browser environments it automatically uses in-memory storage.
 
+![CI](https://github.com/huseyinekh/universal-storage/actions/workflows/ci.yml/badge.svg)
+
 ## Install
 
 ```bash
