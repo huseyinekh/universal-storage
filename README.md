@@ -14,13 +14,13 @@ Works in JavaScript and TypeScript. SSR-safe: in non-browser environments it aut
 ## Install
 
 ```bash
-npm i universal-storage
+npm i @huseyinekh/universal-storage
 ```
 
 ## Usage
 
 ```ts
-import storage, { createStorage } from "universal-storage";
+import storage, { createStorage } from "@huseyinekh/universal-storage";
 
 type User = { id: string; name: string };
 
@@ -112,7 +112,7 @@ storage.cookie.set(key, value, {
 If you import the default export, you get a singleton instance created with default options:
 
 ```ts
-import storage from "universal-storage";
+import storage from "@huseyinekh/universal-storage";
 storage.local.set("k", 1);
 ```
 

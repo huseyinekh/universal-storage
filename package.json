@@ -1,5 +1,5 @@
 {
-  "name": "universal-storage",
+  "name": "@huseyinekh/universal-storage",
   "version": "0.1.0",
   "description": "Unified, type-safe API for localStorage, sessionStorage, cookies, and IndexedDB with SSR-safe fallbacks.",
   "license": "MIT",
