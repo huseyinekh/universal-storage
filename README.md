@@ -81,6 +81,16 @@ import { createStorage } from "web-universal-storage";
 const storage = createStorage({ namespace: "app" });
 ```
 
+### One instance per namespace
+
+If you want to ensure a single instance per `namespace` (singleton per config), use `getStorage(...)`:
+
+```ts
+import { getStorage } from "web-universal-storage";
+
+const storage = getStorage({ namespace: "app" });
+```
+
 ## Options
 
 ```ts
@@ -194,4 +204,3 @@ import storage from "web-universal-storage";
 storage.local.set("count", 1);
 console.log(storage.local.get("count")); // 1
 ```
-

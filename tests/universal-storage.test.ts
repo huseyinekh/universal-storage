@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import storage, { createStorage } from "../src/index";
+import storage, { createStorage, getStorage } from "../src/index";
 
 type MockStorage = {
   length: number;
@@ -96,6 +96,26 @@ describe("universal-storage (SSR fallback)", () => {
   it("default export singleton is usable", () => {
     storage.local.set("singleton", 123);
     expect(storage.local.get<number>("singleton")).toBe(123);
+  });
+});
+
+describe("namespace singleton helper", () => {
+  it("getStorage returns same instance for same namespace", () => {
+    const a1 = getStorage({ namespace: "app" });
+    const a2 = getStorage({ namespace: "app" });
+    expect(a1).toBe(a2);
+  });
+
+  it("getStorage returns different instances for different namespaces", () => {
+    const a = getStorage({ namespace: "a" });
+    const b = getStorage({ namespace: "b" });
+    expect(a).not.toBe(b);
+  });
+
+  it("createStorage still creates new instances", () => {
+    const a1 = createStorage({ namespace: "app" });
+    const a2 = createStorage({ namespace: "app" });
+    expect(a1).not.toBe(a2);
   });
 });
 
