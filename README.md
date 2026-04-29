@@ -1,4 +1,4 @@
-# universal-storage
+# web-universal-storage
 
 Unified, type-safe API for browser storage:
 
@@ -7,7 +7,7 @@ Unified, type-safe API for browser storage:
 - `document.cookie` (sync)
 - `IndexedDB` (async)
 
-Works in JavaScript and TypeScript. SSR-safe: in non-browser environments it automatically uses in-memory storage.
+SSR-safe: in non-browser environments it automatically falls back to in-memory storage.
 
 ![CI](https://github.com/huseyinekh/universal-storage/actions/workflows/ci.yml/badge.svg)
 
@@ -17,41 +17,77 @@ Works in JavaScript and TypeScript. SSR-safe: in non-browser environments it aut
 npm i web-universal-storage
 ```
 
-## Usage
+## Basic Usage
+
+All storages support generics and `get<T>()` returns `T | null` (never `undefined`).
+
+### Default instance
+
+The default export is a singleton instance created with default options:
 
 ```ts
-import storage, { createStorage } from "web-universal-storage";
+import storage from "web-universal-storage";
+```
+
+### `localStorage` (sync)
+
+```ts
+import storage from "web-universal-storage";
 
 type User = { id: string; name: string };
 
-// Option A (like axios): default singleton instance
 storage.local.set<User>("user", { id: "1", name: "Ada" });
-const u1 = storage.local.get<User>("user");
-
-// Option B: create your own configured instance
-const storage2 = createStorage({ namespace: "app" });
-
-storage2.local.set<User>("user", { id: "1", name: "Ada" });
-const user = storage2.local.get<User>("user"); // User | null
-
-storage2.session.remove("token");
-
-storage2.cookie.set("token", "abc", { expires: 7, sameSite: "lax" });
-const token = storage2.cookie.get<string>("token");
-
-await storage2.db.set("large_data", { ok: true });
-const large = await storage2.db.get<{ ok: boolean }>("large_data");
+const user = storage.local.get<User>("user");
+storage.local.remove("user");
 ```
 
-## API
+### `sessionStorage` (sync)
 
-### `createStorage(options?)`
+```ts
+import storage from "web-universal-storage";
+
+storage.session.set("token", "abc");
+const token = storage.session.get<string>("token");
+storage.session.remove("token");
+```
+
+### Cookies (sync)
+
+```ts
+import storage from "web-universal-storage";
+
+storage.cookie.set("token", "abc", { expires: 7, sameSite: "lax", secure: true });
+const token = storage.cookie.get<string>("token");
+storage.cookie.remove("token");
+```
+
+### IndexedDB (async)
+
+```ts
+import storage from "web-universal-storage";
+
+await storage.db.set("large_data", { ok: true });
+const large = await storage.db.get<{ ok: boolean }>("large_data");
+await storage.db.remove("large_data");
+```
+
+## `createStorage(options?)`
+
+Create a custom instance when you need namespacing, default TTL, custom IndexedDB names, or change events.
+
+```ts
+import { createStorage } from "web-universal-storage";
+
+const storage = createStorage({ namespace: "app" });
+```
+
+## Options
 
 ```ts
 type CreateStorageOptions = {
   namespace?: string;
   /**
-   * Default TTL (ms) applied when `set()` is called without `ttl`.
+   * Default TTL (ms) applied when `set()` is called without `ttlMs`.
    * TTL is implemented via metadata wrapper (not native storage expiration).
    */
   defaultTtlMs?: number;
@@ -66,11 +102,49 @@ type CreateStorageOptions = {
    */
   dbStoreName?: string;
   /**
-   * Listen to in-process changes (set/remove/clear).
+   * In-process events for this instance only (set/remove/clear).
    */
   onChange?: (event: StorageChangeEvent) => void;
 };
 ```
+
+## Features
+
+### Namespacing
+
+```ts
+import { createStorage } from "web-universal-storage";
+
+const s1 = createStorage({ namespace: "app" });
+const s2 = createStorage({ namespace: "admin" });
+
+s1.local.set("key", 1);
+s2.local.set("key", 2);
+```
+
+### TTL (expiration)
+
+TTL works for all storage types. Expired values return `null` and are removed on read.
+
+```ts
+import storage from "web-universal-storage";
+
+storage.local.set("temp", { ok: true }, { ttlMs: 5_000 });
+```
+
+### Change events
+
+```ts
+import { createStorage } from "web-universal-storage";
+
+const storage = createStorage({
+  onChange(e) {
+    console.log(e.storage, e.action, e.key);
+  },
+});
+```
+
+## API Reference
 
 ### Sync storages: `local`, `session`, `cookie`
 
@@ -104,31 +178,19 @@ storage.cookie.set(key, value, {
 
 ## SSR / Disabled storage
 
-- If `typeof window === "undefined"` or a storage is unavailable/throws, the library falls back to an in-memory `Map`.
-- `get()` never throws and never returns `undefined` (returns `null` on miss or errors).
-
-### Default singleton import
-
-If you import the default export, you get a singleton instance created with default options:
-
-```ts
-import storage from "web-universal-storage";
-storage.local.set("k", 1);
-```
-
-If you need a namespace, TTL defaults, custom IndexedDB name, or a change listener, use `createStorage(...)`.
+- If `typeof window === "undefined"` or a storage is unavailable/throws, the library uses in-memory storage.
+- `get()` never throws and never returns `undefined` (returns `null`).
 
 ## Fallback behavior
 
-- If a write fails (e.g. `QuotaExceededError`), the value is stored in memory as a best-effort fallback.
-- Reads check the primary storage first, then memory fallback.
+- Reads: primary storage → memory fallback
+- Writes: try primary storage → memory fallback (best-effort; e.g. quota exceeded / storage blocked)
 
 ## Example (JS)
 
 ```js
-import { createStorage } from "universal-storage";
+import storage from "web-universal-storage";
 
-const storage = createStorage();
 storage.local.set("count", 1);
 console.log(storage.local.get("count")); // 1
 ```
