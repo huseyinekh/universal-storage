@@ -97,6 +97,20 @@ describe("universal-storage (SSR fallback)", () => {
     storage.local.set("singleton", 123);
     expect(storage.local.get<number>("singleton")).toBe(123);
   });
+
+  it("reset clears instance storages", async () => {
+    const s = createStorage({ namespace: "r" });
+    s.local.set("a", 1);
+    await s.resetType("local");
+    expect(s.local.get("a")).toBeNull();
+  });
+
+  it("fullReset clears default storage too", async () => {
+    storage.local.set("x", 1);
+    expect(storage.local.get<number>("x")).toBe(1);
+    await storage.fullReset();
+    expect(storage.local.get("x")).toBeNull();
+  });
 });
 
 describe("namespace singleton helper", () => {

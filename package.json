@@ -1,6 +1,6 @@
 {
   "name": "web-universal-storage",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Unified, type-safe API for localStorage, sessionStorage, cookies, and IndexedDB with SSR-safe fallbacks.",
   "license": "MIT",
   "keywords": [

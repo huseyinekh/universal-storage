@@ -220,6 +220,31 @@ storage.cookie.set(key, value, {
 - Reads: primary storage → memory fallback
 - Writes: try primary storage → memory fallback (best-effort; e.g. quota exceeded / storage blocked)
 
+## Reset
+
+`reset()` clears storages for a specific instance (namespace-aware). `fullReset()` is a more destructive variant that clears the underlying storages broadly and is only available on the default import.
+
+### Instance reset (default import or `createStorage`)
+
+```ts
+import storage, { createStorage } from "web-universal-storage";
+
+await storage.reset(); // local + session + cookie + db (default instance)
+await storage.resetType("cookie");
+
+const s = createStorage({ namespace: "app" });
+await s.reset(); // clears only "app:" keys
+```
+
+### Full reset (default import only)
+
+```ts
+import storage from "web-universal-storage";
+
+await storage.fullReset();
+await storage.fullResetType("local");
+```
+
 ## Example (JS)
 
 ```js

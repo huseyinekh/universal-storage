@@ -38,6 +38,12 @@ const getSelectedStorage = (kind: StorageKind, mode: "default" | "getStorage" | 
   return instance[kind];
 };
 
+const getSelectedInstance = (mode: "default" | "getStorage" | "createStorage") => {
+  if (mode === "default") return storage;
+  const ns = ($("#namespace") as HTMLInputElement).value.trim();
+  return mode === "getStorage" ? getStorage({ namespace: ns || undefined }) : createStorage({ namespace: ns || undefined });
+};
+
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div class="wrap">
     <header>
@@ -108,6 +114,13 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <button id="btnGet">get</button>
         <button id="btnRemove">remove</button>
         <button id="btnClear">clear</button>
+      </div>
+
+      <div class="row">
+        <button id="btnResetOne">reset (this kind)</button>
+        <button id="btnResetAll">reset (all kinds)</button>
+        <button id="btnFullResetOne">fullReset (this kind)</button>
+        <button id="btnFullResetAll">fullReset (all kinds)</button>
       </div>
 
       <h3>Output</h3>
@@ -182,4 +195,30 @@ $("#btnClear").addEventListener("click", async () => {
 
   await api.clear();
   setOutput(`clear ok (${kind})`);
+});
+
+$("#btnResetOne").addEventListener("click", async () => {
+  const kind = ($("#kind") as HTMLSelectElement).value as StorageKind;
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const instance = getSelectedInstance(mode);
+  await instance.resetType(kind);
+  setOutput(`resetType ok (${kind})`);
+});
+
+$("#btnResetAll").addEventListener("click", async () => {
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const instance = getSelectedInstance(mode);
+  await instance.reset();
+  setOutput("reset ok (all kinds)");
+});
+
+$("#btnFullResetOne").addEventListener("click", async () => {
+  const kind = ($("#kind") as HTMLSelectElement).value as StorageKind;
+  await storage.fullResetType(kind);
+  setOutput(`fullResetType ok (${kind})`);
+});
+
+$("#btnFullResetAll").addEventListener("click", async () => {
+  await storage.fullReset();
+  setOutput("fullReset ok (all kinds)");
 });

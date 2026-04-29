@@ -12,8 +12,17 @@ export type CookieDefaults = Omit<CookieOptions, "ttlMs">;
 
 export type StorageChangeEvent = {
   storage: "local" | "session" | "cookie" | "db" | "memory";
-  action: "set" | "remove" | "clear";
+  action: "set" | "remove" | "clear" | "reset";
   key?: string;
+};
+
+export type StorageKind = "local" | "session" | "cookie" | "db";
+
+export type ResetOptions = {
+  /**
+   * Reset only a subset of storages. Default: all.
+   */
+  storages?: StorageKind[];
 };
 
 export type CreateStorageOptions = {
@@ -51,5 +60,23 @@ export type UniversalStorage = {
   session: SyncStorage;
   cookie: CookieStorage;
   db: AsyncStorage;
+  /**
+   * Clears all configured storages for this instance's namespace.
+   * Always resolves (never throws).
+   */
+  reset(options?: ResetOptions): Promise<void>;
+  /**
+   * Clears a single storage kind for this instance's namespace.
+   * Always resolves (never throws).
+   */
+  resetType(kind: StorageKind): Promise<void>;
 };
+
+export type InternalMeta = {
+  namespace: string | undefined;
+  keyPrefix: string;
+  dbName: string;
+  dbStoreName: string;
+};
+
 
