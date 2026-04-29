@@ -17,6 +17,7 @@ export const createStorage = (options: CreateStorageOptions = {}): UniversalStor
 
   const onChange = options.onChange;
   const defaultTtlMs = options.defaultTtlMs;
+  const cookieDefaults = options.cookieDefaults;
 
   const local = createWebStorage({
     kind: "local",
@@ -38,6 +39,7 @@ export const createStorage = (options: CreateStorageOptions = {}): UniversalStor
     keyPrefix,
     memory,
     defaultTtlMs,
+    cookieDefaults,
     onChange,
   });
 

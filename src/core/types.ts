@@ -8,6 +8,8 @@ export type CookieOptions = {
   ttlMs?: number;
 };
 
+export type CookieDefaults = Omit<CookieOptions, "ttlMs">;
+
 export type StorageChangeEvent = {
   storage: "local" | "session" | "cookie" | "db" | "memory";
   action: "set" | "remove" | "clear";
@@ -17,6 +19,7 @@ export type StorageChangeEvent = {
 export type CreateStorageOptions = {
   namespace?: string;
   defaultTtlMs?: number;
+  cookieDefaults?: CookieDefaults;
   dbName?: string;
   dbStoreName?: string;
   onChange?: (event: StorageChangeEvent) => void;

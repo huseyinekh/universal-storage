@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import storage, { createStorage, getStorage } from "../src/index";
+import storage, { configureDefaults, createStorage, getStorage } from "../src/index";
 
 type MockStorage = {
   length: number;
@@ -116,6 +116,17 @@ describe("namespace singleton helper", () => {
     const a1 = createStorage({ namespace: "app" });
     const a2 = createStorage({ namespace: "app" });
     expect(a1).not.toBe(a2);
+  });
+});
+
+describe("global defaults", () => {
+  it("getStorage inherits cookieDefaults when not provided", () => {
+    configureDefaults({ cookieDefaults: { sameSite: "lax", secure: true } });
+    const a = getStorage({ namespace: "d" });
+    const b = getStorage({ namespace: "d" });
+    expect(a).toBe(b);
+    // restore library defaults for other tests
+    configureDefaults({ cookieDefaults: { sameSite: "lax", secure: true, path: "/" } });
   });
 });
 

@@ -1,5 +1,5 @@
 import type { MemoryStorage } from "../core/memoryStorage";
-import type { CookieOptions, StorageChangeEvent } from "../core/types";
+import type { CookieDefaults, CookieOptions, StorageChangeEvent } from "../core/types";
 import { hasCookies } from "../utils/env";
 import { deserialize, serialize } from "../utils/serialize";
 
@@ -61,11 +61,12 @@ export type CreateCookieStorageParams = {
   keyPrefix: string;
   memory: MemoryStorage;
   defaultTtlMs: number | undefined;
+  cookieDefaults: CookieDefaults | undefined;
   onChange: ((event: StorageChangeEvent) => void) | undefined;
 };
 
 export const createCookieStorage = (params: CreateCookieStorageParams) => {
-  const { keyPrefix, memory, defaultTtlMs, onChange } = params;
+  const { keyPrefix, memory, defaultTtlMs, cookieDefaults, onChange } = params;
   const available = hasCookies();
   const fullKey = (key: string) => `${keyPrefix}${key}`;
 
@@ -95,7 +96,7 @@ export const createCookieStorage = (params: CreateCookieStorageParams) => {
             : defaultTtlMs != null
               ? Date.now() + Math.max(0, defaultTtlMs)
               : null;
-        const adjustedOpts: CookieOptions = { ...opts };
+        const adjustedOpts: CookieOptions = { ...cookieDefaults, ...opts };
         if (expiresAtMs != null && adjustedOpts.expires == null && adjustedOpts.ttlMs == null) {
           adjustedOpts.ttlMs = expiresAtMs - Date.now();
         }

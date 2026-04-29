@@ -102,6 +102,16 @@ type CreateStorageOptions = {
    */
   defaultTtlMs?: number;
   /**
+   * Default cookie attributes for this storage instance.
+   * Note: `ttlMs` is per-call (not a default).
+   */
+  cookieDefaults?: {
+    expires?: number | Date;
+    path?: string;
+    secure?: boolean;
+    sameSite?: "strict" | "lax" | "none";
+  };
+  /**
    * IndexedDB database name.
    * Default: "universal-storage"
    */
@@ -152,6 +162,20 @@ const storage = createStorage({
     console.log(e.storage, e.action, e.key);
   },
 });
+```
+
+### Global defaults (for default instance)
+
+You can configure defaults used by the default singleton and by any instance that does not override those defaults.
+
+```ts
+import storage, { configureDefaults } from "web-universal-storage";
+
+configureDefaults({
+  cookieDefaults: { sameSite: "lax", secure: true, path: "/" },
+});
+
+storage.cookie.set("token", "abc"); // uses configured cookie defaults
 ```
 
 ## API Reference
