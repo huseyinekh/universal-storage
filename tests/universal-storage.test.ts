@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { createStorage } from "../src/index";
+import storage, { createStorage } from "../src/index";
 
 type MockStorage = {
   length: number;
@@ -91,6 +91,11 @@ describe("universal-storage (SSR fallback)", () => {
     await expect(storage.db.get<{ ok: boolean }>("big")).resolves.toEqual({ ok: true });
     await storage.db.remove("big");
     await expect(storage.db.get("big")).resolves.toBeNull();
+  });
+
+  it("default export singleton is usable", () => {
+    storage.local.set("singleton", 123);
+    expect(storage.local.get<number>("singleton")).toBe(123);
   });
 });
 

@@ -18,22 +18,27 @@ npm i universal-storage
 ## Usage
 
 ```ts
-import { createStorage } from "universal-storage";
+import storage, { createStorage } from "universal-storage";
 
 type User = { id: string; name: string };
 
-const storage = createStorage({ namespace: "app" });
-
+// Option A (like axios): default singleton instance
 storage.local.set<User>("user", { id: "1", name: "Ada" });
-const user = storage.local.get<User>("user"); // User | null
+const u1 = storage.local.get<User>("user");
 
-storage.session.remove("token");
+// Option B: create your own configured instance
+const storage2 = createStorage({ namespace: "app" });
 
-storage.cookie.set("token", "abc", { expires: 7, sameSite: "lax" });
-const token = storage.cookie.get<string>("token");
+storage2.local.set<User>("user", { id: "1", name: "Ada" });
+const user = storage2.local.get<User>("user"); // User | null
 
-await storage.db.set("large_data", { ok: true });
-const large = await storage.db.get<{ ok: boolean }>("large_data");
+storage2.session.remove("token");
+
+storage2.cookie.set("token", "abc", { expires: 7, sameSite: "lax" });
+const token = storage2.cookie.get<string>("token");
+
+await storage2.db.set("large_data", { ok: true });
+const large = await storage2.db.get<{ ok: boolean }>("large_data");
 ```
 
 ## API
@@ -99,6 +104,17 @@ storage.cookie.set(key, value, {
 
 - If `typeof window === "undefined"` or a storage is unavailable/throws, the library falls back to an in-memory `Map`.
 - `get()` never throws and never returns `undefined` (returns `null` on miss or errors).
+
+### Default singleton import
+
+If you import the default export, you get a singleton instance created with default options:
+
+```ts
+import storage from "universal-storage";
+storage.local.set("k", 1);
+```
+
+If you need a namespace, TTL defaults, custom IndexedDB name, or a change listener, use `createStorage(...)`.
 
 ## Fallback behavior
 
