@@ -1,8 +1,21 @@
 {
   "name": "web-universal-storage",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unified, type-safe API for localStorage, sessionStorage, cookies, and IndexedDB with SSR-safe fallbacks.",
   "license": "MIT",
+  "keywords": [
+    "storage",
+    "universal-storage",
+    "localstorage",
+    "sessionstorage",
+    "cookie",
+    "cookies",
+    "indexeddb",
+    "browser",
+    "ssr",
+    "nextjs",
+    "typescript"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/huseyinekh/universal-storage.git"
