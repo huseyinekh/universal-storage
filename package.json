@@ -1,6 +1,6 @@
 {
   "name": "web-universal-storage",
-  "version": "0.1.2",
+  "version": "0.2.0-next.0",
   "description": "Unified, type-safe API for localStorage, sessionStorage, cookies, and IndexedDB with SSR-safe fallbacks.",
   "license": "MIT",
   "keywords": [
@@ -12,6 +12,10 @@
     "cookies",
     "indexeddb",
     "browser",
+    "encryption",
+    "secure-storage",
+    "webcrypto",
+    "aes-gcm",
     "ssr",
     "nextjs",
     "typescript"

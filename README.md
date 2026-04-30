@@ -125,6 +125,18 @@ type CreateStorageOptions = {
    * In-process events for this instance only (set/remove/clear).
    */
   onChange?: (event: StorageChangeEvent) => void;
+  /**
+   * Optional secure (encryption) layer configuration.
+   * Sync APIs remain unencrypted; use `storage.secure.*` for encryption.
+   */
+  encryption?: {
+    enabled?: boolean;
+    secret?: string; // defaults to "khid" when enabled
+    local?: { enabled?: boolean };
+    session?: { enabled?: boolean };
+    cookie?: { enabled?: boolean };
+    db?: { enabled?: boolean };
+  };
 };
 ```
 
@@ -169,9 +181,9 @@ const storage = createStorage({
 You can configure defaults used by the default singleton and by any instance that does not override those defaults.
 
 ```ts
-import storage, { configureDefaults } from "web-universal-storage";
+import storage from "web-universal-storage";
 
-configureDefaults({
+storage.configure({
   cookieDefaults: { sameSite: "lax", secure: true, path: "/" },
 });
 
@@ -244,6 +256,62 @@ import storage from "web-universal-storage";
 await storage.fullReset();
 await storage.fullResetType("local");
 ```
+
+## Encryption (secure layer)
+
+Encryption is optional and **disabled by default**. Existing sync APIs remain unchanged and store **plain** values.
+
+Use the async secure wrapper:
+
+```ts
+import storage from "web-universal-storage";
+
+await storage.secure.local.set("user", { id: 1 });
+const user = await storage.secure.local.get<{ id: number }>("user");
+```
+
+### Enable encryption per instance
+
+```ts
+import { createStorage } from "web-universal-storage";
+
+const storage = createStorage({
+  namespace: "app",
+  encryption: { enabled: true, secret: "my-secret" },
+});
+
+await storage.secure.db.set("profile", { ok: true });
+```
+
+If `secret` is not provided and encryption is enabled, it defaults to `"khid"`.
+
+### Per-storage enable/disable
+
+```ts
+import { createStorage } from "web-universal-storage";
+
+const storage = createStorage({
+  encryption: {
+    enabled: true,
+    session: { enabled: false },
+    cookie: { enabled: false },
+  },
+});
+```
+
+### Per-call override
+
+```ts
+import { createStorage } from "web-universal-storage";
+
+const storage = createStorage({ encryption: { enabled: true } });
+
+await storage.secure.local.set("tmp", { ok: true }, { encryption: false });
+```
+
+### SSR safety
+
+If `window` or Web Crypto is unavailable, encryption is skipped silently and secure APIs fall back to plain storage.
 
 ## Example (JS)
 

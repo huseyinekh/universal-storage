@@ -1,7 +1,8 @@
 import "./style.css";
-import storage, { configureDefaults, createStorage, getStorage } from "web-universal-storage";
+import storage, { createStorage, getStorage } from "web-universal-storage";
 
 type StorageKind = "local" | "session" | "cookie" | "db";
+type InstanceMode = "default" | "getStorage" | "createStorage";
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 
@@ -29,26 +30,24 @@ const setOutput = (text: string) => {
   $("#out").textContent = text;
 };
 
-const getSelectedStorage = (kind: StorageKind, mode: "default" | "getStorage" | "createStorage") => {
-  if (mode === "default") return storage[kind];
-
-  const ns = ($("#namespace") as HTMLInputElement).value.trim();
-  const instance =
-    mode === "getStorage" ? getStorage({ namespace: ns || undefined }) : createStorage({ namespace: ns || undefined });
-  return instance[kind];
-};
-
-const getSelectedInstance = (mode: "default" | "getStorage" | "createStorage") => {
+const getSelectedInstance = (mode: InstanceMode) => {
   if (mode === "default") return storage;
   const ns = ($("#namespace") as HTMLInputElement).value.trim();
   return mode === "getStorage" ? getStorage({ namespace: ns || undefined }) : createStorage({ namespace: ns || undefined });
+};
+
+const isSecureMode = (): boolean => ($("#apiMode") as HTMLSelectElement).value === "secure";
+
+const getSelectedApi = (kind: StorageKind, mode: InstanceMode) => {
+  const instance = getSelectedInstance(mode);
+  return isSecureMode() ? instance.secure[kind] : instance[kind];
 };
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
   <div class="wrap">
     <header>
       <h1>web-universal-storage playground</h1>
-      <p>Smoke-test all storages + defaults in a real browser.</p>
+      <p>Smoke-test storages, defaults, reset, and the secure (encryption) layer.</p>
     </header>
 
     <section class="card">
@@ -72,6 +71,15 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
         <label>Cookie path
           <input id="path" value="/" />
         </label>
+        <label>Encryption enabled
+          <select id="encEnabled">
+            <option value="false" selected>false</option>
+            <option value="true">true</option>
+          </select>
+        </label>
+        <label>Encryption secret
+          <input id="encSecret" value="khid" />
+        </label>
       </div>
       <div class="row">
         <button id="applyDefaults">Apply defaults (global)</button>
@@ -82,6 +90,12 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
     <section class="card">
       <h2>Operations</h2>
       <div class="grid">
+        <label>API
+          <select id="apiMode">
+            <option value="plain" selected>plain (sync)</option>
+            <option value="secure">secure (async)</option>
+          </select>
+        </label>
         <label>Instance
           <select id="instanceMode">
             <option value="default" selected>default import</option>
@@ -133,12 +147,18 @@ $("#applyDefaults").addEventListener("click", () => {
   const sameSite = ($("#sameSite") as HTMLSelectElement).value as "" | "lax" | "strict" | "none";
   const secureRaw = ($("#secure") as HTMLSelectElement).value as "" | "true" | "false";
   const path = ($("#path") as HTMLInputElement).value.trim();
+  const encEnabled = ($("#encEnabled") as HTMLSelectElement).value === "true";
+  const encSecret = ($("#encSecret") as HTMLInputElement).value.trim();
 
-  configureDefaults({
+  storage.configure({
     cookieDefaults: {
       ...(sameSite ? { sameSite } : {}),
       ...(secureRaw ? { secure: secureRaw === "true" } : {}),
       ...(path ? { path } : {}),
+    },
+    encryption: {
+      enabled: encEnabled,
+      ...(encSecret ? { secret: encSecret } : {}),
     },
   });
 
@@ -147,24 +167,24 @@ $("#applyDefaults").addEventListener("click", () => {
 
 $("#btnSet").addEventListener("click", async () => {
   const kind = ($("#kind") as HTMLSelectElement).value as StorageKind;
-  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as InstanceMode;
   const key = ($("#key") as HTMLInputElement).value;
   const value = parseValue(($("#value") as HTMLTextAreaElement).value);
 
-  const api = getSelectedStorage(kind, mode) as unknown as {
+  const api = getSelectedApi(kind, mode) as unknown as {
     set: (k: string, v: unknown) => unknown;
   };
 
   await api.set(key, value);
-  setOutput(`set ok (${kind})`);
+  setOutput(`set ok (${kind}, ${isSecureMode() ? "secure" : "plain"})`);
 });
 
 $("#btnGet").addEventListener("click", async () => {
   const kind = ($("#kind") as HTMLSelectElement).value as StorageKind;
-  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as InstanceMode;
   const key = ($("#key") as HTMLInputElement).value;
 
-  const api = getSelectedStorage(kind, mode) as unknown as {
+  const api = getSelectedApi(kind, mode) as unknown as {
     get: (k: string) => unknown;
   };
 
@@ -174,10 +194,10 @@ $("#btnGet").addEventListener("click", async () => {
 
 $("#btnRemove").addEventListener("click", async () => {
   const kind = ($("#kind") as HTMLSelectElement).value as StorageKind;
-  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as InstanceMode;
   const key = ($("#key") as HTMLInputElement).value;
 
-  const api = getSelectedStorage(kind, mode) as unknown as {
+  const api = getSelectedApi(kind, mode) as unknown as {
     remove: (k: string) => unknown;
   };
 
@@ -187,9 +207,9 @@ $("#btnRemove").addEventListener("click", async () => {
 
 $("#btnClear").addEventListener("click", async () => {
   const kind = ($("#kind") as HTMLSelectElement).value as StorageKind;
-  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as InstanceMode;
 
-  const api = getSelectedStorage(kind, mode) as unknown as {
+  const api = getSelectedApi(kind, mode) as unknown as {
     clear: () => unknown;
   };
 
@@ -199,14 +219,14 @@ $("#btnClear").addEventListener("click", async () => {
 
 $("#btnResetOne").addEventListener("click", async () => {
   const kind = ($("#kind") as HTMLSelectElement).value as StorageKind;
-  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as InstanceMode;
   const instance = getSelectedInstance(mode);
   await instance.resetType(kind);
   setOutput(`resetType ok (${kind})`);
 });
 
 $("#btnResetAll").addEventListener("click", async () => {
-  const mode = ($("#instanceMode") as HTMLSelectElement).value as "default" | "getStorage" | "createStorage";
+  const mode = ($("#instanceMode") as HTMLSelectElement).value as InstanceMode;
   const instance = getSelectedInstance(mode);
   await instance.reset();
   setOutput("reset ok (all kinds)");

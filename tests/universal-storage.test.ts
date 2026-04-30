@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
+import { webcrypto } from "node:crypto";
 import storage, { configureDefaults, createStorage, getStorage } from "../src/index";
 
 type MockStorage = {
@@ -46,7 +47,16 @@ const installBrowserMocks = (params?: { quota?: boolean }) => {
   (globalThis as unknown as { window: unknown }).window = {
     localStorage: local,
     sessionStorage: session,
+    crypto: webcrypto,
   };
+  const existingCrypto = (globalThis as unknown as { crypto?: unknown }).crypto as { subtle?: unknown } | undefined;
+  if (!existingCrypto || !existingCrypto.subtle) {
+    try {
+      (globalThis as unknown as { crypto: unknown }).crypto = webcrypto;
+    } catch {
+      // Some environments expose a read-only global crypto; that's fine.
+    }
+  }
   let cookie = "";
   (globalThis as unknown as { document: unknown }).document = {
     get cookie() {
@@ -171,6 +181,42 @@ describe("cookies", () => {
     expect(storage.cookie.get<string>("t")).toBe("abc");
     storage.cookie.remove("t");
     expect(storage.cookie.get("t")).toBeNull();
+  });
+});
+
+describe("secure encryption layer", () => {
+  it("encrypts on set and decrypts on get (local)", async () => {
+    installBrowserMocks();
+    const s = createStorage({ namespace: "e", encryption: { enabled: true, secret: "s1" } });
+    await s.secure.local.set("k", { a: 1 });
+    const raw = s.local.get<unknown>("k") as Record<string, unknown> | null;
+    expect(raw).not.toBeNull();
+    expect(raw && raw.__type).toBe("encrypted");
+    await expect(s.secure.local.get<{ a: number }>("k")).resolves.toEqual({ a: 1 });
+  });
+
+  it("returns null on wrong secret", async () => {
+    installBrowserMocks();
+    const s1 = createStorage({ namespace: "w", encryption: { enabled: true, secret: "one" } });
+    await s1.secure.local.set("k", "hi");
+
+    const s2 = createStorage({ namespace: "w", encryption: { enabled: true, secret: "two" } });
+    await expect(s2.secure.local.get<string>("k")).resolves.toBeNull();
+  });
+
+  it("falls back to plain storage when encryption disabled", async () => {
+    installBrowserMocks();
+    const s = createStorage({ namespace: "p", encryption: { enabled: false } });
+    await s.secure.local.set("k", 123);
+    expect(s.local.get<number>("k")).toBe(123);
+    await expect(s.secure.local.get<number>("k")).resolves.toBe(123);
+  });
+
+  it("SSR: skips encryption silently", async () => {
+    const s = createStorage({ namespace: "ssr", encryption: { enabled: true } });
+    await s.secure.local.set("k", { ok: true });
+    expect(s.local.get<{ ok: boolean }>("k")).toEqual({ ok: true });
+    await expect(s.secure.local.get<{ ok: boolean }>("k")).resolves.toEqual({ ok: true });
   });
 });
 

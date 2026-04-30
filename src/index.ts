@@ -14,8 +14,9 @@ const cacheKeyFor = (options: CreateStorageOptions | undefined): string => {
   const cookieDefaults = options?.cookieDefaults
     ? JSON.stringify(options.cookieDefaults)
     : "";
+  const encryption = options?.encryption ? JSON.stringify(options.encryption) : "";
   // Note: `onChange` is intentionally not part of the cache key.
-  return `${ns}||${dbName}||${dbStoreName}||${defaultTtlMs}||${cookieDefaults}`;
+  return `${ns}||${dbName}||${dbStoreName}||${defaultTtlMs}||${cookieDefaults}||${encryption}`;
 };
 
 export const getStorage = (options?: CreateStorageOptions): UniversalStorage => {
@@ -119,6 +120,11 @@ const fullResetImpl = async (): Promise<void> => {
 
 export type DefaultStorage = UniversalStorage & {
   /**
+   * Configure global defaults for the default singleton instance.
+   * Also affects `getStorage(...)` instances.
+   */
+  configure(defaults: GlobalDefaults): void;
+  /**
    * Global destructive reset (clears all storages, not only the namespace).
    * Only available on the default import.
    */
@@ -134,6 +140,7 @@ export type DefaultStorage = UniversalStorage & {
 // while also exposing default-only helpers (full reset).
 export const storage: DefaultStorage = new Proxy({} as DefaultStorage, {
   get(_t, prop) {
+    if (prop === "configure") return configureDefaults;
     if (prop === "fullReset") return fullResetImpl;
     if (prop === "fullResetType") return fullResetTypeImpl;
     return (defaultInstance as unknown as Record<PropertyKey, unknown>)[prop] as never;
@@ -146,6 +153,9 @@ export type {
   CookieOptions,
   CookieDefaults,
   CookieStorage,
+  EncryptionConfig,
+  EncryptionPayload,
+  SecureUniversalStorage,
   CreateStorageOptions,
   StorageChangeEvent,
   SyncStorage,

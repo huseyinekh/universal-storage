@@ -3,6 +3,7 @@ import type { CreateStorageOptions, InternalMeta, ResetOptions, StorageKind, Uni
 import { createCookieStorage } from "../storages/cookieStorage";
 import { createIndexedDBStorage } from "../storages/indexedDBStorage";
 import { createWebStorage } from "../storages/localStorage";
+import { createSecureLayer } from "../encryption/secure";
 
 const normalizeNamespacePrefix = (namespace: string | undefined): string => {
   if (!namespace) return "";
@@ -91,6 +92,13 @@ export const createStorage = (options: CreateStorageOptions = {}): UniversalStor
     session,
     cookie,
     db,
+    secure: createSecureLayer({
+      local,
+      session,
+      cookie,
+      db,
+      encryption: options.encryption,
+    }),
     reset,
     resetType,
   };
